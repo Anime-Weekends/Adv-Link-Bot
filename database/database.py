@@ -1,31 +1,31 @@
-# +++ Modified By Yato [telegram username: @i_killed_my_clan & @ProYato] +++ # aNDI BANDI SANDI JISNE BHI CREDIT HATAYA USKI BANDI RAndi 
+
 import motor.motor_asyncio
 import base64
 from config import DB_URI, DB_NAME
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import List, Optional
 
 dbclient = motor.motor_asyncio.AsyncIOMotorClient(DB_URI)
 database = dbclient[DB_NAME]
 
-# collections
+# Collections
 user_data = database['users']
 channels_collection = database['channels']
-fsub_data = database['fsub']   
+fsub_data = database['fsub']
 rqst_fsub_data = database['request_forcesub']
 rqst_fsub_Channel_data = database['request_forcesub_channel']
+admins_collection = database['admins']
+
+# USER MANAGEMENT
 
 async def add_user(user_id: int) -> bool:
-    """Add a user to the database if they don't exist."""
     if not isinstance(user_id, int) or user_id <= 0:
         print(f"Invalid user_id: {user_id}")
         return False
-    
     try:
         existing_user = await user_data.find_one({'_id': user_id})
         if existing_user:
             return False
-        
         await user_data.insert_one({'_id': user_id, 'created_at': datetime.utcnow()})
         return True
     except Exception as e:
@@ -33,13 +33,11 @@ async def add_user(user_id: int) -> bool:
         return False
 
 async def present_user(user_id: int) -> bool:
-    """Check if a user exists in the database."""
     if not isinstance(user_id, int):
         return False
     return bool(await user_data.find_one({'_id': user_id}))
 
 async def full_userbase() -> List[int]:
-    """Get all user IDs from the database."""
     try:
         user_docs = user_data.find()
         return [doc['_id'] async for doc in user_docs]
@@ -48,7 +46,6 @@ async def full_userbase() -> List[int]:
         return []
 
 async def del_user(user_id: int) -> bool:
-    """Delete a user from the database."""
     try:
         result = await user_data.delete_one({'_id': user_id})
         return result.deleted_count > 0
@@ -56,21 +53,19 @@ async def del_user(user_id: int) -> bool:
         print(f"Error deleting user {user_id}: {e}")
         return False
 
+# ADMIN MANAGEMENT
+
 async def is_admin(user_id: int) -> bool:
-    """Check if a user is an admin."""
-    admins_collection = database['admins']
     try:
-        user_id = int(user_id)  # Ensure always int
+        user_id = int(user_id)
         return bool(await admins_collection.find_one({'_id': user_id}))
     except Exception as e:
         print(f"Error checking admin status for {user_id}: {e}")
         return False
 
 async def add_admin(user_id: int) -> bool:
-    """Add a user as admin."""
-    admins_collection = database['admins']
     try:
-        user_id = int(user_id)  # Ensure always int
+        user_id = int(user_id)
         await admins_collection.update_one({'_id': user_id}, {'$set': {'_id': user_id}}, upsert=True)
         return True
     except Exception as e:
@@ -78,8 +73,6 @@ async def add_admin(user_id: int) -> bool:
         return False
 
 async def remove_admin(user_id: int) -> bool:
-    """Remove a user from admins."""
-    admins_collection = database['admins']
     try:
         result = await admins_collection.delete_one({'_id': user_id})
         return result.deleted_count > 0
@@ -87,9 +80,7 @@ async def remove_admin(user_id: int) -> bool:
         print(f"Error removing admin {user_id}: {e}")
         return False
 
-async def list_admins() -> list:
-    """List all admin user IDs."""
-    admins_collection = database['admins']
+async def list_admins() -> List[int]:
     try:
         admins = await admins_collection.find().to_list(None)
         return [admin['_id'] for admin in admins]
@@ -97,12 +88,12 @@ async def list_admins() -> list:
         print(f"Error listing admins: {e}")
         return []
 
+# CHANNEL MANAGEMENT
+
 async def save_channel(channel_id: int) -> bool:
-    """Save a channel to the database with invite link expiration."""
     if not isinstance(channel_id, int):
         print(f"Invalid channel_id: {channel_id}")
         return False
-    
     try:
         await channels_collection.update_one(
             {"channel_id": channel_id},
@@ -122,7 +113,6 @@ async def save_channel(channel_id: int) -> bool:
         return False
 
 async def get_channels() -> List[int]:
-    """Get all active channel IDs from the database."""
     try:
         channels = await channels_collection.find({"status": "active"}).to_list(None)
         valid_channels = []
@@ -139,7 +129,6 @@ async def get_channels() -> List[int]:
         return []
 
 async def delete_channel(channel_id: int) -> bool:
-    """Delete a channel from the database."""
     try:
         result = await channels_collection.delete_one({"channel_id": channel_id})
         return result.deleted_count > 0
@@ -148,11 +137,9 @@ async def delete_channel(channel_id: int) -> bool:
         return False
 
 async def save_encoded_link(channel_id: int) -> Optional[str]:
-    """Save an encoded link for a channel and return it."""
     if not isinstance(channel_id, int):
         print(f"Invalid channel_id: {channel_id}")
         return None
-    
     try:
         encoded_link = base64.urlsafe_b64encode(str(channel_id).encode()).decode()
         await channels_collection.update_one(
@@ -172,10 +159,8 @@ async def save_encoded_link(channel_id: int) -> Optional[str]:
         return None
 
 async def get_channel_by_encoded_link(encoded_link: str) -> Optional[int]:
-    """Get a channel ID by its encoded link."""
     if not isinstance(encoded_link, str):
         return None
-    
     try:
         channel = await channels_collection.find_one({"encoded_link": encoded_link, "status": "active"})
         return channel["channel_id"] if channel and "channel_id" in channel else None
@@ -184,11 +169,9 @@ async def get_channel_by_encoded_link(encoded_link: str) -> Optional[int]:
         return None
 
 async def save_encoded_link2(channel_id: int, encoded_link: str) -> Optional[str]:
-    """Save a secondary encoded link for a channel."""
     if not isinstance(channel_id, int) or not isinstance(encoded_link, str):
         print(f"Invalid input: channel_id={channel_id}, encoded_link={encoded_link}")
         return None
-    
     try:
         await channels_collection.update_one(
             {"channel_id": channel_id},
@@ -207,10 +190,8 @@ async def save_encoded_link2(channel_id: int, encoded_link: str) -> Optional[str
         return None
 
 async def get_channel_by_encoded_link2(encoded_link: str) -> Optional[int]:
-    """Get a channel ID by its secondary encoded link."""
     if not isinstance(encoded_link, str):
         return None
-    
     try:
         channel = await channels_collection.find_one({"req_encoded_link": encoded_link, "status": "active"})
         return channel["channel_id"] if channel and "channel_id" in channel else None
@@ -219,11 +200,9 @@ async def get_channel_by_encoded_link2(encoded_link: str) -> Optional[int]:
         return None
 
 async def save_invite_link(channel_id: int, invite_link: str, is_request: bool) -> bool:
-    """Save the current invite link for a channel and its type."""
     if not isinstance(channel_id, int) or not isinstance(invite_link, str):
         print(f"Invalid input: channel_id={channel_id}, invite_link={invite_link}")
         return False
-    
     try:
         await channels_collection.update_one(
             {"channel_id": channel_id},
@@ -243,10 +222,8 @@ async def save_invite_link(channel_id: int, invite_link: str, is_request: bool) 
         return False
 
 async def get_current_invite_link(channel_id: int) -> Optional[dict]:
-    """Get the current invite link and its type for a channel."""
     if not isinstance(channel_id, int):
         return None
-    
     try:
         channel = await channels_collection.find_one({"channel_id": channel_id, "status": "active"})
         if channel and "current_invite_link" in channel:
@@ -259,91 +236,7 @@ async def get_current_invite_link(channel_id: int) -> Optional[dict]:
         print(f"Error fetching current invite link for channel {channel_id}: {e}")
         return None
 
-    # CHANNEL MANAGEMENT
-    async def channel_exist(self, channel_id: int):
-        found = await self.fsub_data.find_one({'_id': channel_id})
-        return bool(found)
-
-    async def add_channel(self, channel_id: int):
-        if not await self.channel_exist(channel_id):
-            await self.fsub_data.insert_one({'_id': channel_id})
-            return
-
-    async def rem_channel(self, channel_id: int):
-        if await self.channel_exist(channel_id):
-            await self.fsub_data.delete_one({'_id': channel_id})
-            return
-
-    async def show_channels(self):
-        channel_docs = await self.fsub_data.find().to_list(length=None)
-        channel_ids = [doc['_id'] for doc in channel_docs]
-        return channel_ids
-
-    
-# Get current mode of a channel
-    async def get_channel_mode(self, channel_id: int):
-        data = await self.fsub_data.find_one({'_id': channel_id})
-        return data.get("mode", "off") if data else "off"
-
-    # Set mode of a channel
-    async def set_channel_mode(self, channel_id: int, mode: str):
-        await self.fsub_data.update_one(
-            {'_id': channel_id},
-            {'$set': {'mode': mode}},
-            upsert=True
-        )
-
-    # REQUEST FORCE-SUB MANAGEMENT
-
-    # Add the user to the set of users for a   specific channel
-    async def req_user(self, channel_id: int, user_id: int):
-        try:
-            await self.rqst_fsub_Channel_data.update_one(
-                {'_id': int(channel_id)},
-                {'$addToSet': {'user_ids': int(user_id)}},
-                upsert=True
-            )
-        except Exception as e:
-            print(f"[DB ERROR] Failed to add user to request list: {e}")
-
-
-    # Method 2: Remove a user from the channel set
-    async def del_req_user(self, channel_id: int, user_id: int):
-        # Remove the user from the set of users for the channel
-        await self.rqst_fsub_Channel_data.update_one(
-            {'_id': channel_id}, 
-            {'$pull': {'user_ids': user_id}}
-        )
-
-    # Check if the user exists in the set of the channel's users
-    async def req_user_exist(self, channel_id: int, user_id: int):
-        try:
-            found = await self.rqst_fsub_Channel_data.find_one({
-                '_id': int(channel_id),
-                'user_ids': int(user_id)
-            })
-            return bool(found)
-        except Exception as e:
-            print(f"[DB ERROR] Failed to check request list: {e}")
-            return False  
-
-
-    # Method to check if a channel exists using show_channels
-    async def reqChannel_exist(self, channel_id: int):
-    # Get the list of all channel IDs from the database
-        channel_ids = await self.show_channels()
-        #print(f"All channel IDs in the database: {channel_ids}")
-
-    # Check if the given channel_id is in the list of channel IDs
-        if channel_id in channel_ids:
-            #print(f"Channel {channel_id} found in the database.")
-            return True
-        else:
-            #print(f"Channel {channel_id} NOT found in the database.")
-            return False
-
 async def set_approval_off(channel_id: int, off: bool = True) -> bool:
-    """Set approval_off flag for a channel."""
     if not isinstance(channel_id, int):
         print(f"Invalid channel_id: {channel_id}")
         return False
@@ -359,7 +252,6 @@ async def set_approval_off(channel_id: int, off: bool = True) -> bool:
         return False
 
 async def is_approval_off(channel_id: int) -> bool:
-    """Check if approval_off flag is set for a channel."""
     if not isinstance(channel_id, int):
         return False
     try:
@@ -368,3 +260,107 @@ async def is_approval_off(channel_id: int) -> bool:
     except Exception as e:
         print(f"Error checking approval_off for channel {channel_id}: {e}")
         return False
+
+# FSUB CHANNEL MANAGEMENT
+
+async def channel_exist(channel_id: int) -> bool:
+    found = await fsub_data.find_one({'_id': channel_id})
+    return bool(found)
+
+async def add_channel(channel_id: int) -> None:
+    if not await channel_exist(channel_id):
+        await fsub_data.insert_one({'_id': channel_id})
+
+async def rem_channel(channel_id: int) -> None:
+    if await channel_exist(channel_id):
+        await fsub_data.delete_one({'_id': channel_id})
+
+async def show_channels() -> List[int]:
+    channel_docs = await fsub_data.find().to_list(length=None)
+    return [doc['_id'] for doc in channel_docs]
+
+async def get_channel_mode(channel_id: int) -> str:
+    data = await fsub_data.find_one({'_id': channel_id})
+    return data.get("mode", "off") if data else "off"
+
+async def set_channel_mode(channel_id: int, mode: str) -> None:
+    await fsub_data.update_one(
+        {'_id': channel_id},
+        {'$set': {'mode': mode}},
+        upsert=True
+    )
+
+# REQUEST FORCE-SUB MANAGEMENT
+
+async def req_user(channel_id: int, user_id: int) -> None:
+    try:
+        await rqst_fsub_Channel_data.update_one(
+            {'_id': int(channel_id)},
+            {'$addToSet': {'user_ids': int(user_id)}},
+            upsert=True
+        )
+    except Exception as e:
+        print(f"[DB ERROR] Failed to add user to request list: {e}")
+
+async def del_req_user(channel_id: int, user_id: int) -> None:
+    await rqst_fsub_Channel_data.update_one(
+        {'_id': channel_id},
+        {'$pull': {'user_ids': user_id}}
+    )
+
+async def req_user_exist(channel_id: int, user_id: int) -> bool:
+    try:
+        found = await rqst_fsub_Channel_data.find_one({
+            '_id': int(channel_id),
+            'user_ids': int(user_id)
+        })
+        return bool(found)
+    except Exception as e:
+        print(f"[DB ERROR] Failed to check request list: {e}")
+        return False
+
+async def add_rqst_channel(channel_id: int) -> None:
+    try:
+        await rqst_fsub_Channel_data.update_one({'_id': int(channel_id)}, {'$setOnInsert': {'user_ids': []}}, upsert=True)
+    except Exception as e:
+        print(f"[DB ERROR] Failed to add request channel: {e}")
+
+async def rem_rqst_channel(channel_id: int) -> None:
+    try:
+        await rqst_fsub_Channel_data.delete_one({'_id': int(channel_id)})
+    except Exception as e:
+        print(f"[DB ERROR] Failed to remove request channel: {e}")
+
+async def rqst_channel_exist(channel_id: int) -> bool:
+    try:
+        found = await rqst_fsub_Channel_data.find_one({'_id': int(channel_id)})
+        return bool(found)
+    except Exception as e:
+        print(f"[DB ERROR] Failed to check request channel existence: {e}")
+        return False
+
+async def get_all_req_users(channel_id: int) -> List[int]:
+    try:
+        doc = await rqst_fsub_Channel_data.find_one({'_id': int(channel_id)})
+        return doc.get('user_ids', []) if doc else []
+    except Exception as e:
+        print(f"[DB ERROR] Failed to get all request users: {e}")
+        return []
+
+async def del_all_req_users(channel_id: int) -> None:
+    try:
+        await rqst_fsub_Channel_data.update_one({'_id': int(channel_id)}, {'$set': {'user_ids': []}}, upsert=True)
+    except Exception as e:
+        print(f"[DB ERROR] Failed to delete all request users: {e}")
+
+async def get_all_rqst_channels() -> List[int]:
+    try:
+        docs = await rqst_fsub_Channel_data.find().to_list(length=None)
+        return [doc['_id'] for doc in docs]
+    except Exception as e:
+        print(f"[DB ERROR] Failed to get all request channels: {e}")
+        return []
+                       
+#──────────────────────
+#────────ᴊᴇғғʏ ᴅᴇᴠ─────────
+#──────────────────────
