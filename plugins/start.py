@@ -1,4 +1,4 @@
-# +++ Modified By Yato [telegram username: @i_killed_my_clan & @ProYato] +++ # aNDI BANDI SANDI JISNE BHI CREDIT HATAYA USKI BANDI RAndi 
+ 
 import asyncio
 import base64
 import time
@@ -150,82 +150,12 @@ async def start_command(client: Bot, message: Message):
                 parse_mode=ParseMode.HTML
             )
 
-# Remove or comment out the old about/help callback handlers to avoid conflicts
-# @Bot.on_callback_query(filters.regex("help"))
-# async def help_callback(client: Bot, callback_query):
-#     inline_buttons = InlineKeyboardMarkup(
-#         [
-#             [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close")],
-#             InlineKeyboardButton("ʜᴏᴍᴇ •", callback_data="home")],
-#         ]
-#     )
-
-#     await callback_query.answer()
-#     current_text = callback_query.message.text.html if callback_query.message.text else ""
-#     if current_text != CHANNELS_TXT or callback_query.message.reply_markup != inline_buttons:
-#         try:
-#             await callback_query.message.edit_text(
-#                 CHANNELS_TXT,
-#                 reply_markup=inline_buttons,
-#                 parse_mode=ParseMode.HTML
-#             )
-#         except Exception as e:
-#             print(f"Error editing help message: {e}")
-#     else:
-#         print("Skipped edit: Message content unchanged")
-
-# @Bot.on_callback_query(filters.regex("about"))
-# async def about_callback(client: Bot, callback_query):
-#     inline_buttons = InlineKeyboardMarkup(
-#         [
-#             [InlineKeyboardButton("• ᴄʟᴏsᴇ", callback_data="close")],
-#             InlineKeyboardButton("ʜᴏᴍᴇ •", callback_data="home")],
-#         ]
-#     )
-
-#     await callback_query.answer()
-#     current_text = callback_query.message.text.html if callback_query.message.text else ""
-#     if current_text != ABOUT or callback_query.message.reply_markup != inline_buttons:
-#         try:
-#             await callback_query.message.edit_text(
-#                 ABOUT,
-#                 reply_markup=inline_buttons,
-#                 parse_mode=ParseMode.HTML
-#             )
-#         except Exception as e:
-#             print(f"Error editing about message: {e}")
-#     else:
-#         print("Skipped edit: Message content unchanged")
-
 @Bot.on_callback_query(filters.regex("close"))
 async def close_callback(client: Bot, callback_query):
     await callback_query.answer()
     await callback_query.message.delete()
 
-@Bot.on_callback_query(filters.regex("check_sub"))
-async def check_sub_callback(client: Bot, callback_query: CallbackQuery):
-    user_id = callback_query.from_user.id
-    fsub_channels = await get_fsub_channels()
-    
-    if not fsub_channels:
-        await callback_query.message.edit_text(
-            "<b>No FSub channels configured!</b>",
-            parse_mode=ParseMode.HTML
-        )
-        return
-    
-    is_subscribed, subscription_message, subscription_buttons = await check_subscription_status(client, user_id, fsub_channels)
-    if is_subscribed:
-        await callback_query.message.edit_text(
-            "<b>You are subscribed to all required channels! Use /start to proceed.</b>",
-            parse_mode=ParseMode.HTML
-        )
-    else:
-        await callback_query.message.edit_text(
-            subscription_message,
-            reply_markup=subscription_buttons,
-            parse_mode=ParseMode.HTML
-        )
+
 
 WAIT_MSG = "<b>Processing...</b>"
 
