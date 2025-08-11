@@ -7,6 +7,8 @@ from pyrogram import Client, filters
 from pyrogram.enums import ParseMode, ChatMemberStatus
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, InputMediaPhoto
 from pyrogram.errors import FloodWait, UserNotParticipant
+from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant
+from pyrogram.errors import FloodWait, UserIsBlocked, InputUserDeactivated, UserNotParticipant
 
 from bot import Bot
 from datetime import datetime, timedelta
