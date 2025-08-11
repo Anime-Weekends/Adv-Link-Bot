@@ -33,38 +33,37 @@ async def start_command(client: Bot, message: Message):
                 "<b><blockquote expandable>You are temporarily banned from using commands due to spamming. Try again later.</b>",
                 parse_mode=ParseMode.HTML
             )
-            
-    await add_user(user_id)
-# 
-    # Check FSub requirements
-   #  fsub_channels = await get_fsub_channels()
-   #  if fsub_channels:
-    #     is_subscribed, subscription_message, subscription_buttons = await check_subscription_status(client, user_id, fsub_channels)
-   #      if not is_subscribed:
-    #         return await message.reply_text(
-    #             subscription_message,
-    #             reply_markup=subscription_buttons,
-    #             parse_mode=ParseMode.HTML
-     #        )
+
+    # ✅ Check Force Subscription
+    if not await is_subscribed(client, user_id):
+        return await not_joined(client, message)
+
+    # Add user if not already present
+    if not await db.present_user(user_id):
+        try:
+            await db.add_user(user_id)
+        except:
+            pass
 
     text = message.text
     if len(text) > 7:
         try:
             base64_string = text.split(" ", 1)[1]
             is_request = base64_string.startswith("req_")
-            
+
             if is_request:
                 base64_string = base64_string[4:]
                 channel_id = await get_channel_by_encoded_link2(base64_string)
             else:
                 channel_id = await get_channel_by_encoded_link(base64_string)
-            
+
             if not channel_id:
                 return await message.reply_text(
                     "<b><blockquote expandable>Invalid or expired invite link.</b>",
                     parse_mode=ParseMode.HTML
                 )
 
+         
             # Check if this is a /genlink link (original_link exists)
             from database.database import get_original_link
             original_link = await get_original_link(channel_id)
