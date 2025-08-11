@@ -1,4 +1,4 @@
-# +++ Modified By Yato [telegram username: @i_killed_my_clan & @ProYato] +++ # aNDI BANDI SANDI JISNE BHI CREDIT HATAYA USKI BANDI RAndi 
+
 import asyncio
 import sys
 from datetime import datetime
@@ -67,3 +67,7 @@ cancel_lock = asyncio.Lock()
 
 if __name__ == "__main__":
     Bot().run()
+
+#──────────────────────
+#────────ᴊᴇғғʏ ᴅᴇᴠ─────────
+#──────────────────────
