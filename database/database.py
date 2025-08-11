@@ -257,55 +257,88 @@ async def get_current_invite_link(channel_id: int) -> Optional[dict]:
         print(f"Error fetching current invite link for channel {channel_id}: {e}")
         return None
 
-async def add_fsub_channel(channel_id: int) -> bool:
-    """Add a channel to the FSub list."""
-    if not isinstance(channel_id, int):
-        print(f"Invalid channel_id: {channel_id}")
-        return False
+    # CHANNEL MANAGEMENT
+    async def channel_exist(self, channel_id: int):
+        found = await self.fsub_data.find_one({'_id': channel_id})
+        return bool(found)
+
+    async def add_channel(self, channel_id: int):
+        if not await self.channel_exist(channel_id):
+            await self.fsub_data.insert_one({'_id': channel_id})
+            return
+
+    async def rem_channel(self, channel_id: int):
+        if await self.channel_exist(channel_id):
+            await self.fsub_data.delete_one({'_id': channel_id})
+            return
+
+    async def show_channels(self):
+        channel_docs = await self.fsub_data.find().to_list(length=None)
+        channel_ids = [doc['_id'] for doc in channel_docs]
+        return channel_ids
+
     
-    try:
-        existing_channel = await fsub_channels_collection.find_one({'channel_id': channel_id})
-        if existing_channel:
+# Get current mode of a channel
+    async def get_channel_mode(self, channel_id: int):
+        data = await self.fsub_data.find_one({'_id': channel_id})
+        return data.get("mode", "off") if data else "off"
+
+    # Set mode of a channel
+    async def set_channel_mode(self, channel_id: int, mode: str):
+        await self.fsub_data.update_one(
+            {'_id': channel_id},
+            {'$set': {'mode': mode}},
+            upsert=True
+        )
+
+    # REQUEST FORCE-SUB MANAGEMENT
+
+    # Add the user to the set of users for a   specific channel
+    async def req_user(self, channel_id: int, user_id: int):
+        try:
+            await self.rqst_fsub_Channel_data.update_one(
+                {'_id': int(channel_id)},
+                {'$addToSet': {'user_ids': int(user_id)}},
+                upsert=True
+            )
+        except Exception as e:
+            print(f"[DB ERROR] Failed to add user to request list: {e}")
+
+
+    # Method 2: Remove a user from the channel set
+    async def del_req_user(self, channel_id: int, user_id: int):
+        # Remove the user from the set of users for the channel
+        await self.rqst_fsub_Channel_data.update_one(
+            {'_id': channel_id}, 
+            {'$pull': {'user_ids': user_id}}
+        )
+
+    # Check if the user exists in the set of the channel's users
+    async def req_user_exist(self, channel_id: int, user_id: int):
+        try:
+            found = await self.rqst_fsub_Channel_data.find_one({
+                '_id': int(channel_id),
+                'user_ids': int(user_id)
+            })
+            return bool(found)
+        except Exception as e:
+            print(f"[DB ERROR] Failed to check request list: {e}")
+            return False  
+
+
+    # Method to check if a channel exists using show_channels
+    async def reqChannel_exist(self, channel_id: int):
+    # Get the list of all channel IDs from the database
+        channel_ids = await self.show_channels()
+        #print(f"All channel IDs in the database: {channel_ids}")
+
+    # Check if the given channel_id is in the list of channel IDs
+        if channel_id in channel_ids:
+            #print(f"Channel {channel_id} found in the database.")
+            return True
+        else:
+            #print(f"Channel {channel_id} NOT found in the database.")
             return False
-        
-        await fsub_channels_collection.insert_one({
-            'channel_id': channel_id,
-            'created_at': datetime.utcnow(),
-            'status': 'active'
-        })
-        return True
-    except Exception as e:
-        print(f"Error adding FSub channel {channel_id}: {e}")
-        return False
-
-async def remove_fsub_channel(channel_id: int) -> bool:
-    """Remove a channel from the FSub list."""
-    try:
-        result = await fsub_channels_collection.delete_one({'channel_id': channel_id})
-        return result.deleted_count > 0
-    except Exception as e:
-        print(f"Error removing FSub channel {channel_id}: {e}")
-        return False
-
-async def get_fsub_channels() -> List[int]:
-    """Get all active FSub channel IDs."""
-    try:
-        channels = await fsub_channels_collection.find({'status': 'active'}).to_list(None)
-        return [channel['channel_id'] for channel in channels]
-    except Exception as e:
-        print(f"Error fetching FSub channels: {e}")
-        return []
-
-async def get_original_link(channel_id: int) -> Optional[str]:
-    """Get the original link stored for a channel (used by /genlink)."""
-    if not isinstance(channel_id, int):
-        return None
-    try:
-        channel = await channels_collection.find_one({"channel_id": channel_id, "status": "active"})
-        return channel.get("original_link") if channel and "original_link" in channel else None
-    except Exception as e:
-        print(f"Error fetching original link for channel {channel_id}: {e}")
-        return None
 
 async def set_approval_off(channel_id: int, off: bool = True) -> bool:
     """Set approval_off flag for a channel."""
