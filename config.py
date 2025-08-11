@@ -10,16 +10,16 @@ import re
 # === Environment Variables Setup ===
 
 # Telegram Bot Credentials
-TG_BOT_TOKEN = environ.get("TG_BOT_TOKEN", "")
-APP_ID = int(environ.get("APP_ID", "0"))
-API_HASH = environ.get("API_HASH", "")
+TG_BOT_TOKEN = environ.get("TG_BOT_TOKEN", "7716452978:AAFycS6oKfQjWSnrcsp7FklVlU6sUKlARM8")
+APP_ID = int(environ.get("APP_ID", "28744454"))
+API_HASH = environ.get("API_HASH", "debd37cef0ad1a1ce45d0be8e8c3c5e7")
 
 # Owner & App Configurations
-OWNER_ID = int(environ.get("OWNER_ID", "6497757690"))
+OWNER_ID = int(environ.get("OWNER_ID", "6266529037"))
 PORT = environ.get("PORT", "8080")
 
 # Database Configurations
-DB_URI = environ.get("DB_URI", "")
+DB_URI = environ.get("DB_URI", "mongodb+srv://Rexybecomenice:Rexybecomenice@cluster0.4oosu31.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
 DB_NAME = environ.get("DB_NAME", "link")
 
 # Auto Approval Settings
@@ -98,7 +98,7 @@ USER_REPLY_TEXT = "⚠️ ʏᴏᴜ ᴀʀᴇ ɴᴏᴛ ᴍʏ ᴍᴀsᴛᴇʀ. ɢ�
 # === Logging Configuration ===
 
 LOG_FILE_NAME = "links-sharingbot.txt"
-DATABASE_CHANNEL = int(environ.get("DATABASE_CHANNEL", "0"))  # Channel for storing user links
+DATABASE_CHANNEL = int(environ.get("DATABASE_CHANNEL", "-1002525496458"))  # Channel for storing user links
 
 logging.basicConfig(
     level=logging.INFO,
@@ -126,7 +126,7 @@ def LOGGER(name: str) -> logging.Logger:
 # === Admins Configuration ===
 
 try:
-    ADMINS = [int(x) for x in environ.get("ADMINS", "6497757690").split()]
+    ADMINS = [int(x) for x in environ.get("ADMINS", "6266529037").split()]
 except ValueError:
     raise Exception("Admins list must contain only valid integer user IDs.")
 
