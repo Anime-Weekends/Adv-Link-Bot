@@ -11,7 +11,9 @@ database = dbclient[DB_NAME]
 # collections
 user_data = database['users']
 channels_collection = database['channels']
-fsub_channels_collection = database['fsub_channels']
+fsub_data = database['fsub']   
+rqst_fsub_data = database['request_forcesub']
+rqst_fsub_Channel_data = database['request_forcesub_channel']
 
 async def add_user(user_id: int) -> bool:
     """Add a user to the database if they don't exist."""
