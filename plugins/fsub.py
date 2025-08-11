@@ -2,7 +2,6 @@
 #────────ᴊᴇғғʏ ᴅᴇᴠ─────────
 #──────────────────────
 
-
 import asyncio
 import os
 import random
@@ -12,7 +11,6 @@ from pyrogram import Client, filters, __version__
 from pyrogram.enums import ParseMode, ChatAction, ChatMemberStatus, ChatType
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, ReplyKeyboardMarkup, ChatMemberUpdated, ChatPermissions
 from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant, InviteHashEmpty, ChatAdminRequired, PeerIdInvalid, UserIsBlocked, InputUserDeactivated, UserNotParticipant
-from bot import Bot
 from config import *
 from helper_func import *
 from database.database import *
@@ -21,9 +19,8 @@ from database.database import *
 #────────ᴊᴇғғʏ ᴅᴇᴠ─────────
 #──────────────────────
 
-
-#Request force sub mode commad,,,,,,
-@Bot.on_message(filters.command('fsub_mode') & filters.private & admin)
+#Request force sub mode command
+@Client.on_message(filters.command('fsub_mode') & filters.private & is_owner_or_admin)
 async def change_force_sub_mode(client: Client, message: Message):
     temp = await message.reply("<b><i>ᴡᴀɪᴛ ᴀ sᴇᴄ..</i></b>", quote=True)
     channels = await db.show_channels()
@@ -51,7 +48,7 @@ async def change_force_sub_mode(client: Client, message: Message):
     )
 
 # This handler captures membership updates (like when a user leaves, banned)
-@Bot.on_chat_member_updated()
+@Client.on_chat_member_updated()
 async def handle_Chatmembers(client, chat_member_updated: ChatMemberUpdated):    
     chat_id = chat_member_updated.chat.id
 
@@ -67,30 +64,18 @@ async def handle_Chatmembers(client, chat_member_updated: ChatMemberUpdated):
             if await db.req_user_exist(chat_id, user_id):
                 await db.del_req_user(chat_id, user_id)
 
-
 # This handler will capture any join request to the channel/group where the bot is an admin
-@Bot.on_chat_join_request()
+@Client.on_chat_join_request()
 async def handle_join_request(client, chat_join_request):
     chat_id = chat_join_request.chat.id
     user_id = chat_join_request.from_user.id
 
-    #print(f"[JOIN REQUEST] User {user_id} sent join request to {chat_id}")
-
-    # Print the result of db.reqChannel_exist to check if the channel exists
-    channel_exists = await db.reqChannel_exist(chat_id)
-    #print(f"Channel {chat_id} exists in the database: {channel_exists}")
-
-    if channel_exists:
+    if await db.reqChannel_exist(chat_id):
         if not await db.req_user_exist(chat_id, user_id):
             await db.req_user(chat_id, user_id)
-            #print(f"Added user {user_id} to request list for {chat_id}")
-
-#──────────────────────
-#────────ᴊᴇғғʏ ᴅᴇᴠ─────────
-#──────────────────────
 
 # Add channel
-@Bot.on_message(filters.command('add_fsub') & filters.private & admin)
+@Client.on_message(filters.command('add_fsub') & filters.private & is_owner_or_admin)
 async def add_force_sub(client: Client, message: Message):
     temp = await message.reply("<b><i>ᴡᴀɪᴛ ᴀ sᴇᴄ..</i></b>", quote=True)
     args = message.text.split(maxsplit=1)
@@ -120,11 +105,9 @@ async def add_force_sub(client: Client, message: Message):
         member = await client.get_chat_member(chat.id, "me")
         print(f"Bot status: {member.status} in chat: {chat.title} ({chat.id})")  # Debug
 
-        # FIXED ENUM COMPARISON
         if member.status not in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]:
             return await temp.edit("<b>❌ Bot must be an admin in that channel.</b>")
 
-        # Get invite link
         try:
             link = await client.export_chat_invite_link(chat.id)
         except Exception:
@@ -144,12 +127,8 @@ async def add_force_sub(client: Client, message: Message):
         )
 
 
-#──────────────────────
-#────────ᴊᴇғғʏ ᴅᴇᴠ─────────
-#──────────────────────
-
 # Delete channel
-@Bot.on_message(filters.command('del_fsub') & filters.private & admin)
+@Client.on_message(filters.command('del_fsub') & filters.private & is_owner_or_admin)
 async def del_force_sub(client: Client, message: Message):
     temp = await message.reply("<b><i>ᴡᴀɪᴛ ᴀ sᴇᴄ..</i></b>", quote=True)
     args = message.text.split(maxsplit=1)
@@ -177,7 +156,7 @@ async def del_force_sub(client: Client, message: Message):
         return await temp.edit(f"<b>❌ Channel not found in force-sub list:</b> <code>{ch_id}</code>")
 
 # View all channels
-@Bot.on_message(filters.command('fsub_chnl') & filters.private & admin)
+@Client.on_message(filters.command('fsub_chnl') & filters.private & is_owner_or_admin)
 async def list_force_sub_channels(client: Client, message: Message):
     temp = await message.reply("<b><i>ᴡᴀɪᴛ ᴀ sᴇᴄ..</i></b>", quote=True)
     channels = await db.show_channels()
