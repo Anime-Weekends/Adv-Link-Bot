@@ -14,6 +14,7 @@ from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant, Invit
 from config import *
 from helper_func import *
 from database.database import *
+from database.database import db
 
 #──────────────────────
 #────────ᴊᴇғғʏ ᴅᴇᴠ─────────
