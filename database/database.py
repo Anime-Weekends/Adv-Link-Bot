@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import List, Optional
 
 dbclient = motor.motor_asyncio.AsyncIOMotorClient(DB_URI)
+db = database
 database = dbclient[DB_NAME]
 
 # Collections
